@@ -17,8 +17,8 @@ kb2 = InlineKeyboardMarkup(resize_keyboard=True)
 in_button3 = InlineKeyboardButton(text='Мужской', callback_data='male')
 in_button4 = InlineKeyboardButton(text='Женский', callback_data='female')
 kb3 = InlineKeyboardMarkup(resize_keyboard=True)
-in_button5 = InlineKeyboardButton(text='Мужской', callback_data='m')
-in_button6 = InlineKeyboardButton(text='Женский', callback_data='w')
+in_button5 = InlineKeyboardButton(text='Мужской', callback_data='men')
+in_button6 = InlineKeyboardButton(text='Женский', callback_data='women')
 
 kb.add(in_button)
 kb.add(in_button2)
@@ -76,7 +76,7 @@ async def w_m(call):
     await call.answer()
 
 
-@dp.callback_query_handler(text='w')
+@dp.callback_query_handler(text='women')
 async def set_age(call):
     await call.message.answer('Введите свой возраст')
     await UserState.age.set()
@@ -105,7 +105,7 @@ async def send_calories(message, state):
     await state.finish()
 
 
-@dp.callback_query_handler(text='m')
+@dp.callback_query_handler(text='men')
 async def set_age(call):
     await call.message.answer('Введите свой возраст')
     await UserState.age.set()
