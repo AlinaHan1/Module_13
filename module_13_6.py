@@ -6,82 +6,59 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import asyncio
 
-api = ''
+api = '8000769412:AAHrlLNLslcP0A3EeaGDD9bK7dXMvzukG_w'
 bot = Bot(token=api)
-dp = Dispatcher(bot, storage=MemoryStorage())
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
-kb = InlineKeyboardMarkup(resize_keyboard=True)
-in_button = InlineKeyboardButton(text='Рассчитать норму калорий', callback_data='calories')
-in_button2 = InlineKeyboardButton(text='Формула расчета', callback_data='formulas')
-kb2 = InlineKeyboardMarkup(resize_keyboard=True)
-in_button3 = InlineKeyboardButton(text='Мужской', callback_data='male')
-in_button4 = InlineKeyboardButton(text='Женский', callback_data='female')
-kb3 = InlineKeyboardMarkup(resize_keyboard=True)
-in_button5 = InlineKeyboardButton(text='Мужской', callback_data='men')
-in_button6 = InlineKeyboardButton(text='Женский', callback_data='women')
-
-kb.add(in_button)
-kb.add(in_button2)
-kb2.add(in_button3)
-kb2.add(in_button4)
-kb3.add(in_button5)
-kb3.add(in_button6)
-
-start_menu = ReplyKeyboardMarkup(
+kb_gender = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text='Рассчитать'),
-         KeyboardButton(text='Информация')
-         ]
+        [KeyboardButton(text='Мужской'),
+         KeyboardButton(text='Женский')]
     ], resize_keyboard=True
 )
+
+kb_start = InlineKeyboardMarkup(resize_keyboard=True)
+button1 = InlineKeyboardButton(text='Рассчитать норму калорий', callback_data='calories')
+button2 = InlineKeyboardButton(text='Формула расчета', callback_data='formulas')
+button3 = InlineKeyboardButton(text='Информация', callback_data='info')
+kb_start.add(button1)
+kb_start.row(button2, button3)
 
 
 @dp.message_handler(commands=['start'])
 async def start_message(message):
-    await message.answer('Привет! Я бот, помогающий твоему здоровью', reply_markup=start_menu)
+    await message.answer('Привет! Я бот, помогающий твоему здоровью', reply_markup=kb_start)
 
 
 class UserState(StatesGroup):
     age = State()
     growth = State()
     weight = State()
-
-
-@dp.message_handler(text='Рассчитать')
-async def main_menu(message):
-    await message.answer('Выберете опцию:', reply_markup=kb)
+    gender = State()
 
 
 @dp.callback_query_handler(text='formulas')
-async def w_m(call):
-    await call.message.answer('Укажите свой пол:', reply_markup=kb2)
+async def info_gender(call):
+    await call.message.answer('Укажите свой пол:', reply_markup=kb_gender)
     await call.answer()
 
 
-@dp.callback_query_handler(text='female')
-async def get_formula(call):
-    await call.message.answer(f'10 x вес(кг) + 6,25 х рост(см) - 5 х возраст(лет) - 161')
-    await call.answer()
-
-
-@dp.callback_query_handler(text='male')
-async def get_formula(call):
-    await call.message.answer(f'10 x вес(кг) + 6,25 х рост(см) - 5 х возраст(лет) + 5')
-    await call.answer()
+@dp.message_handler(text=['Мужской', 'Женский'])
+async def set_gender(message):
+    if message.text == 'Мужской':
+        await message.answer(f'10 x вес(кг) + 6,25 х рост(см) - 5 х возраст(лет) + 5')
+    if message.text == 'Женский':
+        await message.answer(f'10 x вес(кг) + 6,25 х рост(см) - 5 х возраст(лет) - 161')
 
 
 @dp.callback_query_handler(text='calories')
-async def w_m(call):
-    await call.message.answer('Укажите свой пол:', reply_markup=kb3)
+async def set_age(call):
+    await call.message.answer('Введите свой возраст')
+    await UserState.age.set()
     await call.answer()
 
 
-@dp.callback_query_handler(text='women')
-async def set_age(call):
-    await call.message.answer('Введите свой возраст')
-    await UserState.age.set()
-
-
 @dp.message_handler(state=UserState.age)
 async def set_growth(message, state):
     await state.update_data(age=message.text)
@@ -90,48 +67,42 @@ async def set_growth(message, state):
 
 
 @dp.message_handler(state=UserState.growth)
-async def set_weight(message, state):
-    await state.update_data(growth=message.text)
-    await message.answer('Введите свой вес')
-    await UserState.weight.set()
-
-
-@dp.message_handler(state=UserState.weight)
-async def send_calories(message, state):
-    await state.update_data(weight=message.text)
-    data = await state.get_data()
-    norm = 10 * int(data['weight']) + 6.25 * int(data['growth']) - 5 * int(data['age']) - 161
-    await message.answer(f'Ваша норма калорий: {norm} ')
-    await state.finish()
-
-
-@dp.callback_query_handler(text='men')
-async def set_age(call):
-    await call.message.answer('Введите свой возраст')
-    await UserState.age.set()
-
-
-@dp.message_handler(state=UserState.age)
 async def set_growth(message, state):
-    await state.update_data(age=message.text)
-    await message.answer('Введите свой рост')
-    await UserState.growth.set()
-
-
-@dp.message_handler(state=UserState.growth)
-async def set_weight(message, state):
     await state.update_data(growth=message.text)
     await message.answer('Введите свой вес')
     await UserState.weight.set()
 
 
 @dp.message_handler(state=UserState.weight)
-async def send_calories(message, state):
+async def set_weight(message, state):
     await state.update_data(weight=message.text)
-    data = await state.get_data()
-    norm = 10 * int(data['weight']) + 6.25 * int(data['growth']) - 5 * int(data['age']) + 5
-    await message.answer(f'Ваша норма калорий: {norm} ')
+    await message.answer('Укажите свой пол:', reply_markup=kb_gender)
+    await UserState.gender.set()
+
+
+@dp.message_handler(state=UserState.gender)
+async def set_gender(message, state):
+    await state.update_data(gender=message.text)
+    if UserState.gender == 'men':
+        data = await state.get_data()
+        norm = 10 * int(data['weight']) + 6.25 * int(data['growth']) - 5 * int(data['age']) + 5
+        await message.answer(f'Ваша норма калорий: {norm} ')
+    else:
+        data = await state.get_data()
+        norm = 10 * int(data['weight']) + 6.25 * int(data['growth']) - 5 * int(data['age']) - 161
+        await message.answer(f'Ваша норма калорий: {norm} ')
     await state.finish()
+
+
+@dp.callback_query_handler(text='info')
+async def all_message(call):
+    await call.message.answer('Я бот, помогающий рассчитать дневную норму калорий.')
+    await call.answer()
+
+
+@dp.message_handler()
+async def all_message(message):
+    await message.answer('Введите команду /start, что бы начать общение.')
 
 
 if __name__ == '__main__':
